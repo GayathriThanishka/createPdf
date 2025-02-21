@@ -14,7 +14,7 @@ class PdfPreviewScreen extends StatelessWidget {
         title: const Text("PDF Preview and Print"),
         actionsPadding: EdgeInsets.only(right: 40),
         actions: [
-          IconButton(
+         IconButton(
             icon: const Icon(Icons.print),
             onPressed: () async {
               File pdfFile = File(pdfPath);
@@ -23,7 +23,7 @@ class PdfPreviewScreen extends StatelessWidget {
                 await Printing.layoutPdf(onLayout: (format) => pdfBytes);
               }
             },
-          ),
+          ), 
         ],
       ),
       body: Padding(
@@ -39,3 +39,4 @@ class PdfPreviewScreen extends StatelessWidget {
     );
   }
 }
+ 
