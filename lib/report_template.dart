@@ -15,23 +15,122 @@ class ReportTemplate extends StatefulWidget {
 }
 
 class _ReportTemplateState extends State<ReportTemplate> {
+  int? rows;
+  int? columns;
+  List<List<TextEditingController>> controllers = [];
+  List<TextEditingController> headerControllers = [];
+
+  void initializeControllers() {
+    if (rows == null || columns == null) return;
+    headerControllers = List.generate(
+      columns!,
+      (index) => TextEditingController(),
+    );
+
+    controllers = List.generate(
+      rows!,
+      (rowIndex) =>
+          List.generate(columns!, (colIndex) => TextEditingController()),
+    );
+  }
+
+  void showSelectionDialog() {
+    int selectedRows = 2;
+    int selectedColumns = 2;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text("Select Rows and Columns"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Rows: "),
+                      DropdownButton<int>(
+                        value: selectedRows,
+                        items:
+                            List.generate(10, (index) => index + 1)
+                                .map(
+                                  (e) => DropdownMenuItem(
+                                    value: e,
+                                    child: Text("$e"),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setDialogState(() {
+                              selectedRows = value;
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Columns: "),
+                      DropdownButton<int>(
+                        value: selectedColumns,
+                        items:
+                            List.generate(10, (index) => index + 1)
+                                .map(
+                                  (e) => DropdownMenuItem(
+                                    value: e,
+                                    child: Text("$e"),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setDialogState(() {
+                              selectedColumns = value;
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      rows = selectedRows;
+                      columns = selectedColumns;
+                      initializeControllers();
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: Text("OK"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   final TextEditingController nameController = TextEditingController();
   final TextEditingController ageController = TextEditingController();
   final TextEditingController partController = TextEditingController();
   final TextEditingController techniqueController = TextEditingController();
   final TextEditingController findingController = TextEditingController();
+  final TextEditingController scanContoller1 = TextEditingController();
+  final TextEditingController scanContollrt2 = TextEditingController();
+  final TextEditingController scanContollrt3 = TextEditingController();
   File? signaturefile;
   File? scanningfile;
-  List tableHeaders = ['Aortic', 'Pulmonic', 'Tricuspit', 'Mitral'];
-  List dataTable = [
-    ['Phone', 80, 95],
-    ['Internet', 250, 230],
-    ['Electricity', 300, 375],
-    ['Movies', 85, 80],
-    ['Food', 300, 350],
-    ['Fuel', 650, 550],
-    ['Insurance', 250, 310],
-  ];
+  String? outputpath;
 
   @override
   Widget build(BuildContext context) {
@@ -59,138 +158,183 @@ class _ReportTemplateState extends State<ReportTemplate> {
         padding: const EdgeInsets.symmetric(horizontal: 100),
         child: Row(
           children: [
-            Column(
-              children: [
-                SizedBox(
-                  width: 200,
-                  child: TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Patient Name',
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 15),
-                SizedBox(
-                  width: 200,
-                  child: TextField(
-                    controller: ageController,
-                    decoration: const InputDecoration(labelText: 'Age'),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: 200,
-                  child: TextField(
-                    controller: partController,
-                    decoration: const InputDecoration(labelText: 'Part'),
-                    maxLines: null,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: 200,
-                  child: TextField(
-                    controller: techniqueController,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: "Technique",
-                    ),
-                    maxLines: 3,
-                  ),
-                ),
-                const SizedBox(height: 15),
-                SizedBox(
-                  width: 200,
-                  child: TextField(
-                    controller: findingController,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: "Finding the Purpose",
-                    ),
-                    maxLines: 3,
-                  ),
-                ),
-                SizedBox(
-                  child: Container(
-                    height: 200,
+            SingleChildScrollView(
+              child: Column(
+                children: [
+                  SizedBox(
                     width: 200,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        FilePickerResult? result = await FilePicker.platform
-                            .pickFiles(type: FileType.image);
-                        if (result != null) {
-                          setState(() {
-                            scanningfile = File(result.files.single.path!);
-                          });
-                        }
-                      },
-                      child: const Text("scanning image"),
+                    child: TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Patient Name',
+                      ),
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () async {
-                            FilePickerResult? result = await FilePicker.platform
-                                .pickFiles(type: FileType.image);
-                            if (result != null) {
-                              setState(() {
-                                signaturefile = File(result.files.single.path!);
-                              });
-                            }
-                          },
-                          child: const Text("Import Signature"),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          signaturefile != null
-                              ? "Signature Imported"
-                              : "Upload Signature",
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
+                  const SizedBox(height: 15),
+                  SizedBox(
+                    width: 200,
+                    child: TextField(
+                      controller: ageController,
+                      decoration: const InputDecoration(labelText: 'Age'),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: 200,
+                    child: TextField(
+                      controller: partController,
+                      decoration: const InputDecoration(labelText: 'Part'),
+                      maxLines: null,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: 200,
+                    child: TextField(
+                      controller: techniqueController,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: "Technique",
+                      ),
+                      maxLines: 3,
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  SizedBox(
+                    width: 200,
+                    child: TextField(
+                      controller: findingController,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: "Finding the Purpose",
+                      ),
+                      maxLines: 3,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Column(
+                    children: [
+                      ElevatedButton(
+                        onPressed: showSelectionDialog,
+                        child: Text("Select Table Size"),
+                      ),
+                      if (rows != null && columns != null)
+                        Padding(
+                          padding: const EdgeInsets.all(10.0),
+                          child: Expanded(
+                            // Give a fixed height
+                            child: DataTable(
+                              border: TableBorder.all(),
+                              columns: List.generate(
+                                columns!,
+                                (index) => DataColumn(
+                                  label: SizedBox(width: 50,
+                                    child: TextField(
+                                      controller: headerControllers[index],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              rows: List.generate(
+                                rows!,
+                                (rowIndex) => DataRow(
+                                  cells: List.generate(
+                                    columns!,
+                                    (colIndex) => DataCell(
+                                      SizedBox(width: 50,
+                                        child: TextField(
+                                          maxLines: null,
+                                          controller:
+                                              controllers[rowIndex][colIndex],
+                                          decoration: InputDecoration(
+                                            border: InputBorder.none,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(width: 15),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () async {
-                            final pdfBytes = await generateCertificate(
-                              PdfPageFormat.a4,
-                              nameController.text,
-                              ageController.text,
-                              partController.text,
-                              techniqueController.text,
-                              findingController.text,
-                            );
+                    ],
+                  ),
 
-                            String? outputPath =
-                                await FilePicker.platform.getDirectoryPath();
-                            if (outputPath != null) {
-                              final file = File('$outputPath/Report.pdf');
-                              await file.writeAsBytes(pdfBytes);
-                            }
-                          },
-                          child: const Text("Save PDF"),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () async {
+                              FilePickerResult? result = await FilePicker
+                                  .platform
+                                  .pickFiles(type: FileType.image);
+                              if (result != null) {
+                                setState(() {
+                                  signaturefile = File(
+                                    result.files.single.path!,
+                                  );
+                                });
+                              }
+                            },
+                            child: const Text("Import Signature"),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            signaturefile != null
+                                ? "Signature Updated"
+                                : "Upload Signature",
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 15),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () async {
+                              final pdfBytes = await generateCertificate(
+                                PdfPageFormat.a4,
+                                nameController.text,
+                                ageController.text,
+                                partController.text,
+                                techniqueController.text,
+                                findingController.text,
+                              );
+
+                              outputpath =
+                                  await FilePicker.platform.getDirectoryPath();
+                              if (outputpath != null) {
+                                final file = File('$outputpath/ Report.pdf');
+                                await file.writeAsBytes(pdfBytes);
+                              }
+                            },
+                            child: const Text("Save "),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            outputpath != null ? "Pdf Saved" : "Save Pdf",
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
             const SizedBox(width: 60),
             Expanded(
@@ -223,17 +367,11 @@ class _ReportTemplateState extends State<ReportTemplate> {
   ) async {
     final pdf = pw.Document();
 
-    final libreBaskerville = await PdfGoogleFonts.libreBaskervilleRegular();
-    final libreBaskervilleBold = await PdfGoogleFonts.libreBaskervilleBold();
-
     pdf.addPage(
       pw.Page(
         pageTheme: pw.PageTheme(
           pageFormat: pageFormat,
-          theme: pw.ThemeData.withFont(
-            base: libreBaskerville,
-            bold: libreBaskervilleBold,
-          ),
+          theme: pw.ThemeData.withFont(),
         ),
         build:
             (context) => pw.Column(
@@ -307,36 +445,42 @@ class _ReportTemplateState extends State<ReportTemplate> {
                   ),
                 ),
                 pw.Text('$finding', style: pw.TextStyle(fontSize: 8)),
-                pw.SizedBox(height: 150),
-                pw.TableHelper.fromTextArray(
-                  border: pw.TableBorder.all(width: 0.5),
-                  headers: tableHeaders,
-                  data: List<List<dynamic>>.generate(
-                    dataTable.length,
-                    (index) => <dynamic>[
-                      dataTable[index][0],
-                      dataTable[index][1],
-                      dataTable[index][2],
+                pw.SizedBox(height: 100),
+                if (rows != null && columns != null)
+                  pw.Table(
+                    border: pw.TableBorder.all(),
+                    children: [
+                      // Table Headers
+                      pw.TableRow(
+                        children: List.generate(
+                          columns!,
+                          (index) => pw.Padding(
+                            padding: const pw.EdgeInsets.all(5),
+                            child: pw.Text(
+                              headerControllers[index].text,
+                              style: pw.TextStyle(
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Table Rows
+                      for (int rowIndex = 0; rowIndex < rows!; rowIndex++)
+                        pw.TableRow(
+                          children: List.generate(
+                            columns!,
+                            (colIndex) => pw.Padding(
+                              padding: const pw.EdgeInsets.all(5),
+                              child: pw.Text(
+                                controllers[rowIndex][colIndex].text,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
-                  headerStyle: pw.TextStyle(
-                    color: PdfColors.white,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                  headerDecoration: const pw.BoxDecoration(
-                    // color: pw,
-                  ),
-                  rowDecoration: const pw.BoxDecoration(
-                    border: pw.Border( 
-                      bottom: pw.BorderSide(
-                        // color: baseColor,
-                        width: .5,
-                      ),
-                    ),
-                  ),
-                  cellAlignment: pw.Alignment.centerRight,
-                  cellAlignments: {0: pw.Alignment.centerLeft},
-                ),
+
                 pw.Spacer(),
                 if (signaturefile != null)
                   pw.Align(

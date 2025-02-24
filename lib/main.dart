@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pdftemplate/report_template.dart';
+import 'package:pdftemplate/editing_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(debugShowCheckedModeBanner: false,
      
-      home: ReportTemplate(),
+      home: EditingPage(),
     );
   }
 }
