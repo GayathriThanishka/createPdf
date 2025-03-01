@@ -31,9 +31,12 @@ class _TableFormatState extends State<TableFormat> {
         widget.columns!,
         (index) => DataColumn(
           label: SizedBox(
-            width: 50,
+            width: 100,
             child: TextField(
+              style: TextStyle(fontWeight: FontWeight.bold),
+              maxLines: null,
               controller: widget.headerControllers[index],
+              decoration: const InputDecoration(border: InputBorder.none),
             ),
           ),
         ),
@@ -45,13 +48,11 @@ class _TableFormatState extends State<TableFormat> {
             widget.columns!,
             (colIndex) => DataCell(
               SizedBox(
-                width: 50,
+                width: 100,
                 child: TextField(
                   maxLines: null,
                   controller: widget.controllers[rowIndex][colIndex],
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                  ),
+                  decoration: const InputDecoration(border: InputBorder.none),
                 ),
               ),
             ),

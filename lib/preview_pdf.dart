@@ -35,15 +35,15 @@ class PdfView extends StatelessWidget {
     final pdf = pw.Document();
 
     pdf.addPage(
-     
-      pw.Page(
+      pw.MultiPage(
         pageTheme: pw.PageTheme(
-          margin: pw.EdgeInsets.only(left: 50, right: 100),
-          pageFormat: pageFormat,
+          margin: pw.EdgeInsets.all(25),
+          pageFormat: pageFormat.portrait,
           theme: pw.ThemeData.withFont(),
         ),
-        build:
-            (context) => pw.Column(
+        build: (context) {
+          return [
+            pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Center(
@@ -112,7 +112,9 @@ class PdfView extends StatelessWidget {
                   ),
                 ),
                 pw.Text('$finding', style: pw.TextStyle(fontSize: 8)),
-                pw.SizedBox(height: 100),
+              
+                pw.SizedBox(height: 40),
+                pw.NewPage(),
                 if (rows != null && columns != null)
                   pw.Table(
                     border: pw.TableBorder.all(),
@@ -145,26 +147,34 @@ class PdfView extends StatelessWidget {
                         ),
                     ],
                   ),
-                pw.Spacer(),
-                if (signatureImage != null)
-                  pw.Align(
-                    alignment: pw.Alignment.bottomRight,
-                    child: pw.Column(
-                      children: [
-                        pw.Container(
-                          height: 50,
-                          width: 50,
-                          child: pw.Image(pw.MemoryImage(signatureImage!)),
-                        ),
-                        pw.Text("Signature"),
-                      ],
-                    ),
-                  ),
+                 
               ],
+              
             ),
+          ];
+        },
+        footer: (context) {
+          if (context.pageNumber == context.pagesCount &&
+              signatureImage != null) {
+            return pw.Align(
+              alignment: pw.Alignment.bottomRight,
+              child: pw.Column(
+                children: [
+                  pw.Container(
+                    height: 50,
+                    width: 50,
+                    child: pw.Image(pw.MemoryImage(signatureImage!)),
+                  ),
+                  pw.Text("Signature"),
+                ],
+              ),
+            );
+          } else {
+            return pw.Container(); 
+          }
+        },
       ),
     );
-
     return pdf.save();
   }
 
@@ -186,9 +196,12 @@ class PdfView extends StatelessWidget {
           ),
         ],
       ),
-      body: PdfPreview(
-        useActions: false,
-        build: (format) => generateCertificate(format),
+      body: Padding(
+        padding: const EdgeInsets.only(left: 250, right: 250),
+        child: PdfPreview(
+          useActions: false,
+          build: (format) => generateCertificate(format),
+        ),
       ),
     );
   }

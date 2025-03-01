@@ -1,19 +1,22 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdftemplate/preview_pdf.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdftemplate/table.dart';
-import 'package:pdftemplate/templatePopUp.dart';
 
-class EditingPage extends StatefulWidget {
-  const EditingPage({Key? key}) : super(key: key);
+import 'jsonformat.dart';
+
+class EditTemp extends StatefulWidget {
+  final EditingTemplateData? templateData;
+
+  const EditTemp({Key? key, this.templateData}) : super(key: key);
 
   @override
-  _EditingPageState createState() => _EditingPageState();
+  _EditTempState createState() => _EditTempState();
 }
 
-class _EditingPageState extends State<EditingPage> {
+class _EditTempState extends State<EditTemp> {
   int? rows;
   int? columns;
   List<List<TextEditingController>> controllers = [];
@@ -27,6 +30,41 @@ class _EditingPageState extends State<EditingPage> {
 
   File? signaturefile;
   String? outputpath;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.templateData != null) {
+      loadTemplateData(widget.templateData!);
+    }
+  }
+
+  void loadTemplateData(EditingTemplateData templateData) {
+    nameController.text = templateData.name;
+    ageController.text = templateData.age;
+    partController.text = templateData.part;
+    techniqueController.text = templateData.technique;
+    findingController.text = templateData.finding;
+
+    rows = templateData.tableData.length;
+    columns = templateData.headers.length;
+
+    initializeControllers();
+
+    for (int i = 0; i < templateData.headers.length; i++) {
+      headerControllers[i].text = templateData.headers[i];
+    }
+
+    for (int i = 0; i < templateData.tableData.length; i++) {
+      for (int j = 0; j < templateData.tableData[i].length; j++) {
+        controllers[i][j].text = templateData.tableData[i][j];
+      }
+    }
+
+    if (templateData.signaturePath != null) {
+      signaturefile = File(templateData.signaturePath!);
+    }
+  }
 
   void initializeControllers() {
     if (rows == null || columns == null) return;
@@ -128,31 +166,31 @@ class _EditingPageState extends State<EditingPage> {
     );
   }
 
+  EditingTemplateData getTemplateDataf() {
+    return EditingTemplateData(
+      name: nameController.text,
+      age: ageController.text,
+      part: partController.text,
+      technique: techniqueController.text,
+      finding: findingController.text,
+      headers: headerControllers.map((controller) => controller.text).toList(),
+      tableData:
+          controllers
+              .map((row) => row.map((controller) => controller.text).toList())
+              .toList(),
+      signaturePath: signaturefile?.path,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            const Text(
-              'Edit Your Report',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) =>
-                            TemplatePopup(onTemplateSelected: (String) {}),
-                  ),
-                );
-              },
-              child: Text("Add Template"),
-            ),
-          ],
+        title: Center(
+          child: const Text(
+            'Edit Your Template',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
       ),
       body: Center(
@@ -273,31 +311,16 @@ class _EditingPageState extends State<EditingPage> {
                       children: [
                         ElevatedButton(
                           onPressed: () async {
-                            final pdfBytes = await PdfView(
-                              name: nameController.text,
-                              age: ageController.text,
-                              part: partController.text,
-                              technique: techniqueController.text,
-                              finding: findingController.text,
-                              rows: rows,
-                              columns: columns,
-                              headerControllers: headerControllers,
-                              controllers: controllers,
-                              signatureImage: signaturefile?.readAsBytesSync(),
-                            ).generateCertificate(PdfPageFormat.a4);
+                            final templateData = getTemplateDataf();
+                            await saveJsonToFile(templateData);
 
-                            outputpath =
-                                await FilePicker.platform.getDirectoryPath();
-                            if (outputpath != null) {
-                              final file = File('$outputpath/Report.pdf');
-                              await file.writeAsBytes(pdfBytes);
-                            }
+                            Navigator.pop(context);
                           },
-                          child: const Text("Save PDF"),
+                          child: const Text("Save Template"),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          outputpath != null ? "PDF Saved" : "Save PDF",
+                          outputpath != null ? "PDF Template" : "",
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -305,30 +328,6 @@ class _EditingPageState extends State<EditingPage> {
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(width: 20),
-                    ElevatedButton(
-                      onPressed:
-                          () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => PdfView(
-                                    name: nameController.text,
-                                    age: ageController.text,
-                                    part: partController.text,
-                                    technique: techniqueController.text,
-                                    finding: findingController.text,
-                                    rows: rows,
-                                    columns: columns,
-                                    headerControllers: headerControllers,
-                                    controllers: controllers,
-                                    signatureImage:
-                                        signaturefile?.readAsBytesSync(),
-                                  ),
-                            ),
-                          ),
-                      child: const Text('Preview PDF'),
                     ),
                   ],
                 ),
@@ -339,4 +338,37 @@ class _EditingPageState extends State<EditingPage> {
       ),
     );
   }
+}
+
+Future<void> saveJsonToFile(EditingTemplateData templateData) async {
+  final directory = await getApplicationDocumentsDirectory();
+  final file = File('${directory.path}/template_data.json');
+
+  List<EditingTemplateData> templates = [];
+
+  // Check if the file exists and read existing templates
+   if (await file.exists()) {
+    final jsonString = await file.readAsString();
+     final jsonData = jsonDecode(jsonString);
+
+    // Ensure jsonData is a List
+    if (jsonData is List) {
+      templates =
+           jsonData
+              .map((data) => EditingTemplateData.fromJsonData(data))
+              .toList();
+    } else {
+      // If jsonData is not a List, initialize templates as an empty list
+     templates = [];
+     }
+   }
+
+  // Add the new template to the list
+  templates.add(templateData);
+
+  // Convert the list to JSON and save it
+  final jsonString = jsonEncode(
+    templates.map((template) => template.toJson()).toList(),
+  );
+  await file.writeAsString(jsonString);
 }
